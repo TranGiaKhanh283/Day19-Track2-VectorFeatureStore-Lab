@@ -1,7 +1,7 @@
 # Reflection — Lab 19
 
-**Tên:** _[điền họ tên]_
-**Cohort:** _[ví dụ A20-K1]_
+**Tên:** Trần Gia Khánh - 2A202600293
+**Cohort:** A20-K1
 **Path đã chạy:** lite
 
 ---
