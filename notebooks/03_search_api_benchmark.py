@@ -15,8 +15,9 @@
 
 # %%
 import _setup  # noqa: F401
-import statistics
+import socket
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -30,14 +31,25 @@ import httpx
 
 # %%
 ROOT = Path(_setup.__file__).resolve().parent.parent
+
+
+def _pick_free_port() -> int:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+API_PORT = _pick_free_port()
 proc = subprocess.Popen(
-    ["uvicorn", "app.main:app", "--port", "8000", "--log-level", "warning"],
+    [sys.executable, "-m", "uvicorn", "app.main:app", "--port", str(API_PORT), "--log-level", "warning"],
     cwd=str(ROOT),
 )
 
-# Đợi server up + warm (Searcher.from_corpus loads embeddings + indexes 1000 docs)
-URL = "http://localhost:8000"
-for _ in range(60):
+# Đợi server up + warm (Searcher.from_corpus loads embeddings + indexes 1000 docs; có thể >60s lần đầu)
+URL = f"http://127.0.0.1:{API_PORT}"
+for _ in range(600):
     try:
         r = httpx.get(f"{URL}/healthz", timeout=2.0)
         if r.status_code == 200 and r.json().get("ready"):
@@ -46,9 +58,16 @@ for _ in range(60):
         pass
     time.sleep(1)
 else:
-    raise RuntimeError("API didn't become ready within 60s")
+    proc.terminate()
+    raise RuntimeError("API didn't become ready within 600s (10 min)")
 
 print(httpx.get(f"{URL}/healthz").json())
+
+# Warm-up: rubric measures hybrid P99 after model + caches are hot (README troubleshooting).
+_warm_q = "cloud computing tự động mở rộng"
+for _ in range(10):
+    httpx.get(f"{URL}/search", params={"q": _warm_q, "mode": "hybrid"}, timeout=30.0)
+print("Warm-up: 10 hybrid queries completed")
 
 # %% [markdown]
 # ## 2. Single query — kiểm tra response shape
@@ -63,7 +82,7 @@ for h in body["hits"][:3]:
     print(f"  {h['doc_id']:>14}  score={h['score']:.4f}  {h['title']}")
 
 # %% [markdown]
-# ## 3. TODO — Latency benchmark (100 queries × 3 modes)
+# ## 3. Latency benchmark (100 queries × 3 modes)
 #
 # Dùng 50 golden queries × 2 reps = 100 calls/mode. Ghi nhận latency từ
 # `body["latency_ms"]` (server-side, đã trừ network) HOẶC từ wall-clock httpx
@@ -128,7 +147,10 @@ else:
 
 # %%
 proc.terminate()
-proc.wait(timeout=5)
+try:
+    proc.wait(timeout=15)
+except subprocess.TimeoutExpired:
+    proc.kill()
 print("API server stopped")
 
 # %% [markdown]

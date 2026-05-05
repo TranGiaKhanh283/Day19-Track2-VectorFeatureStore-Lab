@@ -17,6 +17,7 @@
 # %%
 import _setup  # noqa: F401
 import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -26,6 +27,16 @@ REPO_ROOT = Path(_setup.__file__).resolve().parent.parent
 FEAST_DIR = REPO_ROOT / "app" / "feast_repo"
 FEAST_DATA = FEAST_DIR / "data"
 FEAST_DATA.mkdir(exist_ok=True)
+
+
+def _feast_cmd() -> str:
+    """Feast CLI next to current Python (Windows: Scripts/feast.exe)."""
+    bindir = Path(sys.executable).resolve().parent
+    for name in ("feast.exe", "feast"):
+        p = bindir / name
+        if p.exists():
+            return str(p)
+    return "feast"
 
 # %% [markdown]
 # ## 1. Sinh dữ liệu offline (Parquet) cho 3 feature views
@@ -83,8 +94,9 @@ for p in sorted(FEAST_DATA.glob("*.parquet")):
 # Chạy `feast apply` để Feast đọc file definition và ghi vào `registry.db`.
 
 # %%
+_fc = _feast_cmd()
 res = subprocess.run(
-    ["feast", "apply"],
+    [_fc, "apply"],
     cwd=str(FEAST_DIR),
     capture_output=True, text=True, check=False,
 )
@@ -104,7 +116,7 @@ assert res.returncode == 0, f"feast apply failed: {res.stderr}"
 # %%
 end_dt = NOW.strftime("%Y-%m-%dT%H:%M:%S")
 res = subprocess.run(
-    ["feast", "materialize-incremental", end_dt],
+    [_fc, "materialize-incremental", end_dt],
     cwd=str(FEAST_DIR),
     capture_output=True, text=True, check=False,
 )
@@ -147,7 +159,7 @@ print(f"Single lookup: {single_latency_ms:.2f}ms")
 print({k: v[0] for k, v in features.items()})
 
 # %% [markdown]
-# ## 5. TODO — Batch latency benchmark (100 lookups, P99)
+# ## 5. Batch latency benchmark (100 lookups, P99)
 
 # %%
 latencies: list[float] = []

@@ -71,17 +71,15 @@ client.create_collection(
 )
 
 # %% [markdown]
-# ## 4. TODO — embed + upsert toàn bộ corpus
+# ## 4. Embed + upsert toàn bộ corpus
 #
 # Embed `title + " " + text` cho từng doc, batch theo 64 docs/lần (fastembed
 # CPU-bound, batch=64 là sweet spot). Upsert vào Qdrant collection `lab19`.
 #
-# **Hint:** xem `app/search.py` `_build_vector_index()` để tham khảo pattern.
+# **Hint:** cùng pattern với `app/search.py` `_build_vector_index()`.
 
 # %%
-# TODO: implement the embed + upsert loop here.
-# Expected outcome: client.count("lab19") == 1000
-# (~30 seconds on first run as fastembed downloads the model.)
+# Kết quả: `client.count("lab19") == 1000` (~30s lần đầu khi fastembed tải model).
 
 BATCH = 64
 points: list[PointStruct] = []

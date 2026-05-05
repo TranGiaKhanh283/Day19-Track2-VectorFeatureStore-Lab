@@ -28,6 +28,8 @@ make lab              # Jupyter Lab on :8888
 
 Yêu cầu: **Python ≥ 3.10**. Không cần Docker, không cần GPU, không cần OpenAI key.
 
+**Windows:** dùng `powershell -ExecutionPolicy Bypass -File .\setup-lite.ps1` (tương đương `bash setup-lite.sh`; `make` trong repo giả định venv dạng Unix — trên Windows chạy lệnh trong script hoặc gọi `\.venv\Scripts\python.exe` trực tiếp).
+
 Khi `setup-lite.sh` báo `All checks passed`, mở
 **http://localhost:8888/lab/tree/01_embeddings_index.ipynb** và bắt đầu.
 

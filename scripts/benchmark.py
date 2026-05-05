@@ -97,6 +97,11 @@ def main() -> int:
     print()
 
     # ── Latency run (REPS reps × 50 queries) ────────────────────────────
+    # Short warm-up so first-batch embedding/cache effects don't dominate P99.
+    _warm = golden[0]["query"]
+    for _ in range(10):
+        searcher.search(_warm, mode="hybrid", top_k=TOP_K, rrf_k=RRF_K)
+
     print(f"Latency — P50 / P95 / P99 over {REPS_PER_QUERY * len(golden)} calls/mode")
     for mode in ("keyword", "semantic", "hybrid"):
         latencies = []
